@@ -34,7 +34,8 @@ def valid_dir(path):
 def valid_file(path):
     return all([
         path.is_file(),
-        not path.name.startswith('.')
+        not path.name.startswith('.'),
+        '.' in path.name
     ])
 
 
@@ -99,11 +100,19 @@ class EveryDocument(object):
         it updates it automatically.
         '''
         if self._df is None or self._df_need_update:
-            self._df = pd.DataFrame(self.found, columns=[
-                                    'depth', 'suffix', 'name', 'path'])
+            self._df = pd.DataFrame(self.found, columns=self._columns)
             LOGGER.info('The DataFrame is updated')
 
         return self._df
+
+    def _mk_record(self, path, depth):
+        '''
+        Generate the column names,
+        and the self._columns is also generated,
+        to make sure the column names and their contents match with each other.
+        '''
+        self._columns = ['depth', 'suffix', 'name', 'lstat', 'path']
+        return (depth, path.suffix.lower(), path.name, path.lstat(), path)
 
     def _dig(self, root, depth=0):
         '''
@@ -122,7 +131,7 @@ class EveryDocument(object):
         LOGGER.debug('Dig ({}): {}'.format(depth, root))
 
         sub = list(root.iterdir())
-        files = [(depth, e.suffix, e.name, e) for e in sub if valid_file(e)]
+        files = [self._mk_record(e, depth) for e in sub if valid_file(e)]
         dirs = [e for e in sub if valid_dir(e)]
 
         self.found += files
@@ -131,15 +140,17 @@ class EveryDocument(object):
 
 
 # %%
-every_document = EveryDocument(ROOT_PATH, MAX_DEPTH)
-every_document.update()
-every_document.exceed_max_depth_times
-
-# %%
-every_document.data_frame()
-
-# %%
 if __name__ == '__main__':
+    every_document = EveryDocument(ROOT_PATH, MAX_DEPTH)
+    every_document.update()
+    df = every_document.data_frame()
     print('Bye bye')
+
+# %%
+group = df.groupby('suffix')
+group.count()
+
+# %%
+group.first()
 
 # %%
