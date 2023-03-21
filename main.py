@@ -7,9 +7,14 @@ Purpose: Main function of the project
 # %%
 import os
 import time
+import pypandoc
+import traceback
+import threading
 import pandas as pd
 
 from pathlib import Path
+from tqdm.auto import tqdm
+from IPython.display import display
 
 from log.logger import LOGGER
 
@@ -86,7 +91,7 @@ class EveryDocument(object):
             **self.latest_update_status))
 
         if self.exceed_max_depth_times > 0:
-            LOGGER.warning('The exceed_max_depth_times = {} is not Zero, so there are files not being processed.'.format(
+            LOGGER.warning('The exceed_max_depth_times = {} IS NOT 0, so there are files not being processed.'.format(
                 self.exceed_max_depth_times))
 
         return self.latest_update_status
@@ -140,17 +145,66 @@ class EveryDocument(object):
 
 
 # %%
-if __name__ == '__main__':
-    every_document = EveryDocument(ROOT_PATH, MAX_DEPTH)
-    every_document.update()
-    df = every_document.data_frame()
-    print('Bye bye')
+every_document = EveryDocument(ROOT_PATH, MAX_DEPTH)
+every_document.update()
+df = every_document.data_frame()
+
+df = df[df['suffix'].map(lambda s: '.docx' in s)]
 
 # %%
 group = df.groupby('suffix')
-group.count()
+display(group.count())
+display(group.first())
 
 # %%
-group.first()
+
+# %%
+jobs = []
+collection = []
+parallel_limit = 10
+
+
+def convert(path):
+    print(path)
+    try:
+        markdown = pypandoc.convert_file(path, 'markdown', format='docx')
+        collection.append((path, markdown))
+        return markdown
+    except Exception as e:
+        traceback.print_exc()
+    return
+
+
+def operate_jobs():
+    if len(jobs) >= parallel_limit:
+        [job.start() for job in jobs]
+        while len(jobs) > 0:
+            job = jobs.pop()
+            job.join()
+    return
+
+
+for j in tqdm(df.index):
+    path = df.loc[j, 'path']
+    t = threading.Thread(target=convert, args=(path,), daemon=True)
+    jobs.append(t)
+    operate_jobs()
+operate_jobs()
+
+df1 = pd.DataFrame(collection, columns=['path', 'markdown'])
+df1
+
+# %%
+# df['markdown'] = df['path'].map(lambda path: pypandoc.convert_file(path, 'markdown'))
+df
+
+# %%
+joint = pd.merge(df, df1, on='path', how='left')
+joint.fillna('', inplace=True)
+joint
+
+
+# %%
+joint[joint['markdown'].map(lambda x: '决算' in x)]
 
 # %%
