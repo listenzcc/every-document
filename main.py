@@ -32,6 +32,9 @@ ROOT_PATH = Path(os.environ['OneDriveCommercial'])
 
 
 def valid_dir(path):
+    '''
+    Method for determining whether the path is a good directory.
+    '''
     return all([
         path.is_dir(),
         not path.name.startswith('__pycache__'),
@@ -40,6 +43,9 @@ def valid_dir(path):
 
 
 def valid_file(path):
+    '''
+    Method for determining whether the path is a good file.
+    '''
     return all([
         path.is_file(),
         not path.name.startswith('.'),
@@ -103,14 +109,18 @@ class EveryDocument(object):
 
         self._df_needs_update_flag = True
 
+        self.during_update_flag = False
+
+        LOGGER.info('Update files finished.')
         self.summary_latest()
 
-        self.during_update_flag = False
         return self.found
 
     def convert_markdown(self):
         '''
         Convert to the markdown in the thread
+
+        !!! It costs some times
         '''
         t = threading.Thread(target=self._convert_markdown, daemon=True)
         t.start()
@@ -180,14 +190,14 @@ class EveryDocument(object):
             if force_operate or len(jobs) >= parallel_limit:
                 # Start the jobs
                 [job.start() for job in jobs]
-
-                # Join the jobs, until they are done
+                # Join the jobs,
+                # it blocks the loop until the jobs are all done
                 while len(jobs) > 0:
                     job = jobs.pop()
                     job.join()
-
             return
 
+        # Convert the df's record into the markdown
         for j in tqdm(df.index, 'Converting to markdown'):
             path = df.loc[j, 'path']
             t = threading.Thread(target=convert, args=(path,), daemon=True)
@@ -212,6 +222,9 @@ class EveryDocument(object):
         self.convert_markdown_cost_time = time.time() - t0
 
         self.during_conversion_flag = False
+
+        LOGGER.info('Conversion markdown finished.')
+        self.summary_latest()
 
         return df_with_markdown
 
@@ -266,7 +279,7 @@ class EveryDocument(object):
 
         return self._df
 
-    def _mk_record(self, path, depth):
+    def _mk_file_record(self, path, depth):
         '''
         Generate the column names,
         and the self._columns is also generated,
@@ -292,7 +305,7 @@ class EveryDocument(object):
         LOGGER.debug('Dig ({}): {}'.format(depth, root))
 
         sub = list(root.iterdir())
-        files = [self._mk_record(e, depth) for e in sub if valid_file(e)]
+        files = [self._mk_file_record(e, depth) for e in sub if valid_file(e)]
         dirs = [e for e in sub if valid_dir(e)]
 
         self.found += files
@@ -302,92 +315,67 @@ class EveryDocument(object):
 
 # %%
 every_document = EveryDocument(ROOT_PATH, MAX_DEPTH)
+every_document.convert_markdown()
 
 # %%
-df = every_document.data_frame()
-group = df.groupby('suffix')
-display(group.count())
-display(group.first())
-display(df)
+helper = {
+    'quit': 'Quit the program',
+    'group-count': 'Group the DataFrame by suffix, display the counts',
+    'group-first': 'Group the DataFrame by suffix, display the first record',
+    'all-file': 'Display all the files',
+    'find-file [string]': 'Find the files whose name contains the string',
+    'all-markdown': 'Display all the files with markdown content',
+    'find-markdown [string]': 'Display all the files with markdown content containing the string',
+}
 
-# %%
-every_document._convert_markdown()
+if __name__ == '__main__':
+    while True:
+        cmd = input('>> ')
 
-# %%
-every_document.df_with_markdown()
+        if len(cmd.strip()) == 0:
+            print('\n----------------------------------------')
+            print('- Commands')
+            for key, value in helper.items():
+                print('- {}: {}'.format(key, value))
 
-# %%
-every_document.summary_latest()
+        if cmd.startswith('quit'):
+            break
 
-# %%
+        if cmd.startswith('group-count'):
+            df = every_document.data_frame()
+            group = df.groupby('suffix')
+            display(group.count())
 
+        if cmd.startswith('group-first'):
+            df = every_document.data_frame()
+            group = df.groupby('suffix')
+            display(group.first())
 
-# %%
+        if cmd.startswith('all-file'):
+            df = every_document.data_frame()
+            display(df)
 
-def deprecated_function():
-    jobs = []
-    markdown_collection = []
-    success_files = []
-    fail_files = []
+        if cmd.startswith('find-file '):
+            split = [e.strip() for e in cmd.split(' ', 1) if e.strip()]
+            if len(split) == 1:
+                continue
+            df = every_document.data_frame()
+            select = df[df['name'].map(lambda name: split[1] in name)]
+            display(select)
 
-    def convert(path):
-        '''
-        Convert the file of path to markdown string,
-        and the converted file is stored in the markdown_collection array,
-        the columns are ['path', 'markdown'].
+        if cmd.startswith('all-markdown'):
+            df_markdown = every_document.df_with_markdown()
+            display(df_markdown)
 
-        And the files of success & fail are stored in the success_files and fail_files array.
-        '''
+        if cmd.startswith('find-markdown '):
+            split = [e.strip() for e in cmd.split(' ', 1) if e.strip()]
+            if len(split) == 1:
+                continue
+            df_markdown = every_document.df_with_markdown()
+            select = df_markdown[df_markdown['markdown'].map(
+                lambda name: split[1] in name)]
+            display(select)
 
-        # print(path)
-
-        try:
-            markdown = pypandoc.convert_file(path, 'markdown')
-            markdown_collection.append((path, markdown))
-            success_files.append(path)
-            return markdown
-        except Exception as e:
-            fail_files.append(path)
-            traceback.print_exc()
-        return
-
-    def operate_jobs(force_operate=False):
-        '''
-        Operate the jobs in parallel threads,
-        the operations are only called when either force_operate,
-        or the jobs are more then PARALLEL_LIMIT.
-        '''
-        if force_operate or len(jobs) >= PARALLEL_LIMIT:
-            # Start the jobs
-            [job.start() for job in jobs]
-
-            # Join the jobs, until they are done
-            while len(jobs) > 0:
-                job = jobs.pop()
-                job.join()
-
-        return
-
-    for j in tqdm(df.index, 'Converting to markdown'):
-        path = df.loc[j, 'path']
-        t = threading.Thread(target=convert, args=(path,), daemon=True)
-        jobs.append(t)
-        # Finish the jobs if the conditions are matched.
-        operate_jobs()
-
-    # Finish the remain jobs
-    operate_jobs(force_operate=True)
-
-    # Build the DataFrame of the path & markdown
-    df_with_markdown = pd.DataFrame(
-        markdown_collection, columns=['path', 'markdown'])
-
-    # Merge into the DataFrame
-    df_with_markdown = pd.merge(df, df_with_markdown, on='path', how='left')
-    df_with_markdown.fillna('', inplace=True)
-    df_with_markdown
-
-    # %%
-    df_with_markdown[df_with_markdown['markdown'].map(lambda x: '决算' in x)]
+    print('ByeBye')
 
 # %%
