@@ -140,7 +140,7 @@ class EveryDocument(object):
 
         return self._df_with_markdown
 
-    def _convert_markdown(self, allowed_suffix=['.docx'], parallel_limit=10):
+    def _convert_markdown(self, allowed_suffix=['.docx'], parallel_limit=20):
         '''
         Fetch the markdown content from the files
         '''
@@ -359,8 +359,9 @@ if __name__ == '__main__':
             split = [e.strip() for e in cmd.split(' ', 1) if e.strip()]
             if len(split) == 1:
                 continue
+            target = split[1]
             df = every_document.data_frame()
-            select = df[df['name'].map(lambda name: split[1] in name)]
+            select = df[df['name'].map(lambda name: target in name)]
             display(select)
 
         if cmd.startswith('all-markdown'):
@@ -371,10 +372,26 @@ if __name__ == '__main__':
             split = [e.strip() for e in cmd.split(' ', 1) if e.strip()]
             if len(split) == 1:
                 continue
+            target = split[1]
             df_markdown = every_document.df_with_markdown()
             select = df_markdown[df_markdown['markdown'].map(
-                lambda name: split[1] in name)]
+                lambda name: target in name)]
             display(select)
+
+            print('\n---- Detail ----')
+            for j in select.index:
+                split = [e.strip()
+                         for e in select.loc[j, 'markdown'].split('\n')
+                         if target in e]
+
+                kwargs = dict(
+                    idx=j,
+                    name=select.loc[j, 'name'],
+                    path=select.loc[j, 'path'].relative_to(
+                        every_document.root),
+                    content=split
+                )
+                print('{idx}: {name} {path}\n{content}\n'.format(**kwargs))
 
     print('ByeBye')
 
