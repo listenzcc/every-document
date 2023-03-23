@@ -13,8 +13,8 @@ from every_document.every_document import EveryDocument
 
 # %%
 MAX_DEPTH = 3
-# ROOT_PATH = Path(os.environ['OneDriveCommercial'])
-ROOT_PATH = Path(r'C:\\Users\\zcc\\OneDrive - 中国科学院自动化研究所')
+ROOT_PATH = Path(os.environ['OneDriveCommercial'])
+# ROOT_PATH = Path(r'C:\\Users\\zcc\\OneDrive - 中国科学院自动化研究所')
 
 # %%
 every_document = EveryDocument(ROOT_PATH, MAX_DEPTH)
@@ -31,6 +31,7 @@ helper = {
     'find-markdown [string]': 'Display all the files with markdown content containing the string',
 }
 
+
 def unknown_input():
     '''
     Call it when the input is unknown.
@@ -44,6 +45,7 @@ def unknown_input():
     return
 
 # %%
+
 
 if __name__ == '__main__':
     while True:

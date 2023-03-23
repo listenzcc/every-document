@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+
+<head>
+    <title>Every document</title>
+    <style type="text/css">
+        div.session {
+            border-top: 1px solid blueviolet;
+            border-bottom: 1px solid blueviolet;
+            margin: 1em;
+            padding: 0.5em
+        }
+    </style>
+    <script type="text/javascript" src="./src/d3.v7.min.js"></script>
+    <script type="text/javascript" src="./src/script.js"></script>
+    <script>
+        window.onload = function () {
+            console.log('The window is loaded successfully')
+
+            document.getElementById('select-basic-options').onchange = function (e) {
+                console.log(`The ${e.target.id} is changed to [${e.target.value}]`)
+            }
+
+            document.getElementById('select-advanced-search').onchange = function (e) {
+                console.log(`The ${e.target.id} is changed to [${e.target.value}]`)
+            }
+
+            document.getElementById('input-advanced-search').onchange = function (e) {
+                console.log(`The ${e.target.id} is changed to [${e.target.value}]`)
+            }
+        }
+
+    </script>
+</head>
+
+<body>
+    <div class="session">
+        <h1>Every document</h1>
+    </div>
+
+    <div class="session">
+        <h2>Controller</h2>
+        <div>
+            <span>Basic options</span>
+            <select id="select-basic-options">
+                <option>All files</option>
+                <option>Count files</option>
+                <option>First files</option>
+            </select>
+        </div>
+
+        <div>
+            <span>Advanced search</span>
+            <select id="select-advanced-search">
+                <option>Search files by name</option>
+                <option>Search files by content</option>
+            </select>
+            <input type="text" id="input-advanced-search" placeholder="Search" />
+        </div>
+    </div>
+
+    <div class="session">
+        <h2>Results</h2>
+        <div id="runtime-result">
+            N.A.
+        </div>
+    </div>
+
+    <div class="session">
+        <h2>Running status</h2>
+        <div>
+            <button id="button-1">Update status</button>
+        </div>
+        <textarea id="textarea-1"></textarea>
+    </div>
+
+
+</body>
+
+</html>
