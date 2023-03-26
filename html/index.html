@@ -9,10 +9,29 @@
             margin: 1em;
             padding: 0.5em
         }
+
+        div#runtime-result {
+            max-height: 500px;
+            overflow-y: scroll;
+        }
     </style>
     <script type="text/javascript" src="./src/d3.v7.min.js"></script>
     <script type="text/javascript" src="./src/script.js"></script>
     <script>
+
+        function updateOnInput() {
+            const query = document.getElementById('input-advanced-search').value
+
+            document.getElementById("runtime-result").innerHTML = 'Loading';
+
+            if (document.getElementById('select-advanced-search').value === 'Search files by name') {
+                queryFindFile(query)
+            }
+            if (document.getElementById('select-advanced-search').value === 'Search files by content') {
+                queryFindMarkdown(query)
+            }
+        }
+
         window.onload = function () {
             console.log('The window is loaded successfully')
 
@@ -22,10 +41,17 @@
 
             document.getElementById('select-advanced-search').onchange = function (e) {
                 console.log(`The ${e.target.id} is changed to [${e.target.value}]`)
+                updateOnInput()
             }
 
             document.getElementById('input-advanced-search').onchange = function (e) {
                 console.log(`The ${e.target.id} is changed to [${e.target.value}]`)
+                updateOnInput()
+            }
+
+            document.getElementById('button-update-search').onclick = function (e) {
+                console.log(`The ${e.target.id} is changed to [${e.target.value}]`)
+                updateOnInput()
             }
         }
 
@@ -55,6 +81,7 @@
                 <option>Search files by content</option>
             </select>
             <input type="text" id="input-advanced-search" placeholder="Search" />
+            <button id="button-update-search">Update</button>
         </div>
     </div>
 

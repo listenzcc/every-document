@@ -16,6 +16,8 @@ from tqdm.auto import tqdm
 
 from log.logger import LOGGER
 
+# %%
+PARALLEL_LIMIT = 100
 
 # %%
 
@@ -129,7 +131,7 @@ class EveryDocument(object):
 
         return self._df_with_markdown
 
-    def _convert_markdown(self, allowed_suffix=['.docx'], parallel_limit=20):
+    def _convert_markdown(self, allowed_suffix=['.docx'], parallel_limit=PARALLEL_LIMIT):
         '''
         Fetch the markdown content from the files
         '''
@@ -161,12 +163,13 @@ class EveryDocument(object):
             # print(path)
 
             try:
-                markdown = pypandoc.convert_file(path, 'markdown')
+                markdown = pypandoc.convert_file(path.as_posix(), 'markdown')
                 markdown_collection.append((path, markdown))
                 success_files.append(path)
                 return markdown
             except Exception as e:
                 fail_files.append(path)
+                LOGGER.error('Can not convert into markdown: {}'.format(path))
                 traceback.print_exc()
             return
 
