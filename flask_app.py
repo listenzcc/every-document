@@ -65,7 +65,9 @@ def query_find_markdown():
     query = args.get('query', '')
     df = every_document.df_with_markdown()
     df = df[df['markdown'].map(lambda name: query in name)]
-    df['markdown'] = df['markdown'].map(lambda md: '\n'.join([e for e in md.split('\n') if query in e]))
+    df['markdown'] = df['markdown'].map(lambda md: '\n'.join(
+        [e for e in md.split('\n') if query in e]))
+    df['path'] = df['path'].map(lambda p: p.relative_to(every_document.root))
     return df2dict(df)
 
 
